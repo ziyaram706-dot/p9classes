@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: p9classes
+    env: node
+    plan: free
+    region: singapore  # or choose another region like oregon
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXTAUTH_URL
+        fromService:
+          type: web
+          name: p9classes
+          property: host
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: DATABASE_URL
+        sync: false  # Add this in Render dashboard
+      - key: NEXTAUTH_SECRET
+        generateValue: true  # Will generate a random value
+      - key: REDIS_URL
+        sync: false  # Optional - add in dashboard if using Redis
+    autoDeploy: true
