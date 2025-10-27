@@ -1,8 +1,8 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { prisma } from '@/lib/prisma'
-// @ts-ignore
-import bcrypt from 'bcryptjs'
+import { auth } from '@/lib/firebase'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { getUserByEmail } from '@/lib/firestore'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,30 +18,25 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          const user = await prisma.user.findUnique({
-            where: {
-              email: credentials.email
-            }
-          })
+          // Sign in with Firebase Auth
+          const { user: fbUser } = await signInWithEmailAndPassword(
+            auth,
+            credentials.email,
+            credentials.password
+          );
 
-          if (!user) {
-            return null
-          }
+          // Get additional user data from Firestore
+          const userData = await getUserByEmail(credentials.email);
 
-          const isPasswordValid = await bcrypt.compare(
-            credentials.password,
-            user.password
-          )
-
-          if (!isPasswordValid) {
+          if (!fbUser || !userData) {
             return null
           }
 
           return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
+            id: fbUser.uid,
+            email: fbUser.email!,
+            name: userData.name,
+            role: userData.role,
           }
         } catch (error) {
           console.error('Auth error:', error)
