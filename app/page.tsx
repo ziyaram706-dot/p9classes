@@ -26,6 +26,7 @@ interface Course {
   id: string
   title: string
   description: string
+  createdAt?: string
   type: 'LIVE'
   price: number
   discountedPrice?: number
