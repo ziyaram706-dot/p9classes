@@ -10,61 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  STUDENT
-  TUTOR
-  ADMIN
-}
-
-enum CourseType {
-  LIVE
-}
-
-enum CourseCategory {
-  MAKEUP
-  SOFTWARE_TESTING
-  WEB_DEVELOPMENT
-  DATA_SCIENCE
-  DIGITAL_MARKETING
-  GRAPHIC_DESIGN
-  BUSINESS
-  OTHER
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  DECLINED
-}
-
-enum EnrollmentStatus {
-  PENDING
-  APPROVED
-  ACTIVE
-  COMPLETED
-  DECLINED
-}
-
-enum ModuleStatus {
-  LOCKED
-  UNLOCKED
-  IN_PROGRESS
-  COMPLETED
-}
-
-enum CourseStatus {
-  DRAFT
-  ACTIVE
-  COMPLETED
-  CANCELLED
-}
-
-enum QuizStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  COMPLETED
-  FAILED
-}
+// Enums removed for SQLite compatibility - using strings instead
 
 model User {
   id        String   @id @default(cuid())
@@ -72,7 +18,7 @@ model User {
   name      String
   phone     String?
   password  String
-  role      UserRole @default(STUDENT)
+  role      String   @default("STUDENT")
   isActive  Boolean  @default(true)
   createdBy String?  // For admin-created tutor accounts
   createdAt DateTime @default(now())
@@ -96,14 +42,14 @@ model Course {
   id          String       @id @default(cuid())
   title       String
   description String
-  type        CourseType    @default(LIVE)
-  category    CourseCategory @default(OTHER)
+  type        String       @default("LIVE")
+  category    String       @default("OTHER")
   price       Float
   discountedPrice Float?
-  features    String[]
+  features    String[]     // Array of features
   imageUrl    String?
   bannerUrl   String?
-  status      CourseStatus  @default(DRAFT)
+  status      String       @default("DRAFT")
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -210,7 +156,7 @@ model Question {
   quizId      String
   quiz        Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
   question    String
-  options     String[]
+  options     String[] // Array of options
   correctAnswer Int
   order       Int
   createdAt   DateTime @default(now())
@@ -224,8 +170,8 @@ model Enrollment {
   user      User             @relation(fields: [userId], references: [id])
   courseId  String
   course    Course           @relation(fields: [courseId], references: [id])
-  status    EnrollmentStatus @default(PENDING)
-  paymentStatus PaymentStatus @default(PENDING)
+  status    String           @default("PENDING")
+  paymentStatus String       @default("PENDING")
   enrolledAt DateTime?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
@@ -241,7 +187,7 @@ model Payment {
   enrollmentId  String        @unique
   enrollment    Enrollment    @relation(fields: [enrollmentId], references: [id])
   amount        Float
-  status        PaymentStatus @default(PENDING)
+  status        String        @default("PENDING")
   paymentMethod String?
   transactionId String?
   proofUrl      String?
@@ -260,7 +206,7 @@ model Progress {
   course    Course        @relation(fields: [courseId], references: [id])
   moduleId  String?
   module    Module?       @relation(fields: [moduleId], references: [id])
-  status    ModuleStatus  @default(LOCKED)
+  status    String        @default("LOCKED")
   completedAt DateTime?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
@@ -276,8 +222,8 @@ model QuizAttempt {
   quizId    String
   quiz      Quiz       @relation(fields: [quizId], references: [id])
   score     Float
-  status    QuizStatus @default(NOT_STARTED)
-  answers   Json
+  status    String     @default("NOT_STARTED")
+  answers   Json       // JSON object
   createdAt DateTime   @default(now())
 
   @@map("quiz_attempts")
@@ -398,7 +344,7 @@ model Testimonial {
 model CMSContent {
   id        String   @id @default(cuid())
   section   String   @unique
-  content   Json
+  content   Json     // JSON object
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
