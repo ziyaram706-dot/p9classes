@@ -191,9 +191,10 @@ export default function HomePage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden hero-gradient hero-pattern min-h-screen flex items-center">
+  <section className="relative overflow-hidden hero-gradient hero-pattern md:min-h-screen flex items-center">
         {/* Floating Shapes */}
-        <div className="floating-shapes">
+        {/* Decorative floating shapes: hidden on small screens to avoid covering content */}
+        <div className="hidden md:block floating-shapes">
           <div className="floating-shape w-64 h-64 bg-white rounded-full"></div>
           <div className="floating-shape w-32 h-32 bg-blue-200 rounded-full"></div>
           <div className="floating-shape w-48 h-48 bg-purple-200 rounded-full"></div>
@@ -287,7 +288,7 @@ export default function HomePage() {
             <div className="animate-float lg:pl-8">
               <div className="relative">
                 {/* Main Course Card */}
-                <div className="bg-white rounded-2xl shadow-2xl overflow-hidden card-hover transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                <div className="bg-white rounded-2xl shadow-2xl overflow-hidden card-hover transform rotate-0 lg:rotate-3 hover:rotate-0 transition-transform duration-300">
                   {/* Video Thumbnail */}
                   <div className="relative group cursor-pointer">
                     {heroCourse?.imageUrl ? (
