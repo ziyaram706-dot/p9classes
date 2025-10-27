@@ -19,7 +19,8 @@ services:
       - key: DATABASE_URL
         sync: false  # Add this in Render dashboard
       - key: NEXTAUTH_SECRET
-        generateValue: true  # Will generate a random value
+        generateValue: true  # Render will generate a random secure value
+        sync: false  # Prevent overwriting in future deploys
       - key: REDIS_URL
         sync: false  # Optional - add in dashboard if using Redis
     autoDeploy: true
