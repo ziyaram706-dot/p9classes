@@ -23,6 +23,17 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx prisma generate
 
+      - name: Test DB connection
+        if: env.DATABASE_URL != ''
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Testing DB connection via psql..."
+          apt-get update -y
+          apt-get install -y postgresql-client
+          # Try listing databases; this will fail with a clear error if the host is unreachable or SSL is required
+          psql "$DATABASE_URL" -c '\l' || true
+
       - name: Push Prisma schema to database
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
