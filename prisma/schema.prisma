@@ -1,0 +1,420 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  TUTOR
+  ADMIN
+}
+
+enum CourseType {
+  LIVE
+}
+
+enum CourseCategory {
+  MAKEUP
+  SOFTWARE_TESTING
+  WEB_DEVELOPMENT
+  DATA_SCIENCE
+  DIGITAL_MARKETING
+  GRAPHIC_DESIGN
+  BUSINESS
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  DECLINED
+}
+
+enum EnrollmentStatus {
+  PENDING
+  APPROVED
+  ACTIVE
+  COMPLETED
+  DECLINED
+}
+
+enum ModuleStatus {
+  LOCKED
+  UNLOCKED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum CourseStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum QuizStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  phone     String?
+  password  String
+  role      UserRole @default(STUDENT)
+  isActive  Boolean  @default(true)
+  createdBy String?  // For admin-created tutor accounts
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Student specific fields
+  enrollments Enrollment[]
+  progress    Progress[]
+  quizAttempts QuizAttempt[]
+  certificates Certificate[]
+
+  // Tutor specific fields
+  assignedCourses Course[] @relation("TutorCourses")
+  sessions         Session[]
+  attendance       Attendance[]
+
+  @@map("users")
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  type        CourseType    @default(LIVE)
+  category    CourseCategory @default(OTHER)
+  price       Float
+  discountedPrice Float?
+  features    String[]
+  imageUrl    String?
+  bannerUrl   String?
+  status      CourseStatus  @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Live course fields
+  tutorId        String?
+  tutor          User?   @relation("TutorCourses", fields: [tutorId], references: [id])
+  batchStartDate DateTime?
+  batchEndDate   DateTime?
+  totalSeats     Int?
+  seatsLeft      Int?
+  courseHours    Int?
+  sessions       Session[]
+  materials      CourseMaterial[]
+  schedules      ClassSchedule[]
+  modules        Module[]
+
+  enrollments Enrollment[]
+  progress    Progress[]
+  certificates Certificate[]
+
+  @@map("courses")
+}
+
+model CourseMaterial {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  type        String   // VIDEO, PDF, DOC, PPT, LINK
+  url         String
+  fileName    String?
+  fileSize    Int?
+  uploadedBy  String   // tutorId
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("course_materials")
+}
+
+model ClassSchedule {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  googleMeetLink String?
+  status      String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  attendance  Attendance[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("class_schedules")
+}
+
+model Module {
+  id          String @id @default(cuid())
+  courseId    String
+  course      Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  order       Int
+  materials   Material[]
+  quiz        Quiz?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  progress Progress[]
+
+  @@map("modules")
+}
+
+model Material {
+  id        String @id @default(cuid())
+  moduleId  String
+  module    Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title     String
+  type      String // VIDEO, PDF, DOC, PPT
+  url       String
+  order     Int
+  createdAt DateTime @default(now())
+
+  @@map("materials")
+}
+
+model Quiz {
+  id        String @id @default(cuid())
+  moduleId  String @unique
+  module    Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questions Question[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attempts QuizAttempt[]
+
+  @@map("quizzes")
+}
+
+model Question {
+  id          String @id @default(cuid())
+  quizId      String
+  quiz        Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question    String
+  options     String[]
+  correctAnswer Int
+  order       Int
+  createdAt   DateTime @default(now())
+
+  @@map("questions")
+}
+
+model Enrollment {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  courseId  String
+  course    Course           @relation(fields: [courseId], references: [id])
+  status    EnrollmentStatus @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+  enrolledAt DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  payment Payment?
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  enrollmentId  String        @unique
+  enrollment    Enrollment    @relation(fields: [enrollmentId], references: [id])
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  paymentMethod String?
+  transactionId String?
+  proofUrl      String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+model Progress {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  courseId  String
+  course    Course        @relation(fields: [courseId], references: [id])
+  moduleId  String?
+  module    Module?       @relation(fields: [moduleId], references: [id])
+  status    ModuleStatus  @default(LOCKED)
+  completedAt DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([userId, courseId, moduleId])
+  @@map("progress")
+}
+
+model QuizAttempt {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  quizId    String
+  quiz      Quiz       @relation(fields: [quizId], references: [id])
+  score     Float
+  status    QuizStatus @default(NOT_STARTED)
+  answers   Json
+  createdAt DateTime   @default(now())
+
+  @@map("quiz_attempts")
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  tutorId     String
+  tutor       User     @relation(fields: [tutorId], references: [id])
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  meetingLink String?
+  recordingUrl String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("sessions")
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  scheduleId String
+  schedule  ClassSchedule @relation(fields: [scheduleId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  isPresent Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([scheduleId, userId])
+  @@map("attendance")
+}
+
+model Certificate {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  courseId        String
+  course          Course   @relation(fields: [courseId], references: [id])
+  certificateUrl  String
+  certificateId   String   @unique // For verification
+  type            String   @default("STUDENT") // "ADMIN_UPLOADED" or "STUDENT"
+  issuedAt        DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@map("certificates")
+}
+
+model Enquiry {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  courseInterest String?
+  message   String
+  status    String   @default("PENDING") // PENDING, RESOLVED, CONVERTED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("enquiries")
+}
+
+model PageContent {
+  id        String   @id @default(cuid())
+  page      String   @unique // HOME, ABOUT, CONTACT, etc.
+  title     String
+  content   String
+  metaTitle String?
+  metaDescription String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("page_contents")
+}
+
+model Slider {
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String?
+  imageUrl  String
+  linkUrl   String?
+  order     Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sliders")
+}
+
+model MetaTag {
+  id        String   @id @default(cuid())
+  page      String
+  property  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("meta_tags")
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  course    String
+  rating    Int
+  content   String
+  imageUrl  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("testimonials")
+}
+
+model CMSContent {
+  id        String   @id @default(cuid())
+  section   String   @unique
+  content   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cms_content")
+}
+
+model CertificateCredentials {
+  id                        String   @id @default(cuid())
+  companyName               String   @default("Planet Nine Classes")
+  companyLogo               String   @default("🎓")
+  managingDirectorName      String   @default("Abhiram P Mohan")
+  managingDirectorSignature String?  // URL to uploaded signature image
+  signatureImageUrl         String?  // Alternative field for signature image URL
+  websiteUrl                String   @default("https://planetnineclasses.com")
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@map("certificate_credentials")
+}
