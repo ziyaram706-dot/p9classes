@@ -363,7 +363,7 @@ export default function HomePage() {
                 </div>
               </div>
               {(cmsContent?.content?.offer?.link || true) && (
-                <Link href={cmsContent?.content?.offer?.link || "https://comet.com/download"}>
+                <Link href={cmsContent?.content?.offer?.link || "https://perplexity.ai/browser/claim-invite/ODNmZGJkNDAtOTZlMy00ODkwLTk3NTItZmQ0N2Y5NzY1NmJi"}>
                   <Button className="bg-white text-blue-600 hover:bg-blue-50 font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300">
                     Download Comet Browser
                     <ArrowRight className="ml-2 h-4 w-4" />
