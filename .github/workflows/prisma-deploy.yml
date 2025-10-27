@@ -1,0 +1,44 @@
+name: Deploy Prisma schema and seed
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma generate
+
+      - name: Push Prisma schema to database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma db push --accept-data-loss
+
+      - name: Run seed script
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -f prisma/seed.js ]; then
+            node prisma/seed.js
+          elif [ -f prisma/seed.ts ]; then
+            npx tsx prisma/seed.ts
+          else
+            echo "No seed script found. Skipping."
+          fi
+
+      - name: Success message
+        run: echo "Prisma schema pushed and seed script executed successfully."
