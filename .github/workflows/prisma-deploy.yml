@@ -29,8 +29,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           echo "Testing DB connection via psql..."
-          apt-get update -y
-          apt-get install -y postgresql-client
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client
           # Try listing databases; this will fail with a clear error if the host is unreachable or SSL is required
           psql "$DATABASE_URL" -c '\l' || true
 
